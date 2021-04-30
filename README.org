@@ -21,17 +21,15 @@ plover -s plover_plugins install -e .
 Connect with =M-x plover-websocket-connect=
 
 This is the [[https://github.com/abo-abo/hydra][hydra]] I'm trying in my config so that I can press =<f6> <f6>= twice to toggle Plover:
-
 #+begin_src emacs-lisp
 (defhydra my/plover (:exit t)
-  ("<f6>" plover-websocket-toggle-plover :hint nil)
-  ("o" plover-websocket-connect "Open websocket")
-  ("p" plover-websocket-toggle-plover "Toggle Plover")
-  ("a" plover-websocket-add-translation "Add translation")
-  ("l" plover-websocket-lookup "Lookup")
-  ("c" plover-websocket-configure "Configure")
-  ("f" plover-websocket-focus "Focus")
-  ("q" plover-websocket-quit "Quit"))
+  ("<f1>" plover-websocket-connect "Open websocket")
+  ("<f2>" plover-websocket-add-translation "Add translation")
+  ("<f3>" plover-websocket-lookup "Lookup")
+  ("<f4>" plover-websocket-configure "Configure")
+  ("<f5>" plover-websocket-focus "Focus")
+  ("<f6>" plover-websocket-toggle-plover "Toggle Plover")
+  ("<f7>" plover-websocket-quit "Quit"))
 (global-set-key (kbd "<f6>") #'my/plover/body)
 #+end_src
 
