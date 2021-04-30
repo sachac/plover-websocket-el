@@ -86,24 +86,23 @@
   (interactive)
   (start-process-shell-command plover-websocket-plover-command))
 
-(defmacro defplover (command docstring translation &rest args)
+(defmacro defplover (command docstring &rest args)
   `(defun ,command ()
      ,docstring
      (interactive)
      (apply 'plover-websocket-send
-            :translation ,translation
             :zero_last_stroke_length plover-websocket-zero-last-stroke-length
-            ,args)))
+            (quote ,args))))
 ;; test
 
-(defplover plover-websocket-toggle-plover "Toggle Plover." "{PLOVER:TOGGLE}")
-(defplover plover-websocket-suspend-plover "Suspend Plover." "{PLOVER:SUSPEND}")
-(defplover plover-websocket-resume-plover "Resume Plover." "{PLOVER:RESUME}")
-(defplover plover-websocket-add-translation "Add translation using the Plover interface." "{PLOVER:ADD_TRANSLATION}")
-(defplover plover-websocket-lookup "Look up outline using the Plover interface." "{PLOVER:LOOKUP}")
-(defplover plover-websocket-configure "Configure Plover." "{PLOVER:CONFIGURE}")
-(defplover plover-websocket-focus "Focus Plover." "{PLOVER:FOCUS}")
-(defplover plover-websocket-quit "Quit Plover." "{PLOVER:QUIT}")
+(defplover plover-websocket-toggle-plover "Toggle Plover." :translation "{PLOVER:TOGGLE}")
+(defplover plover-websocket-suspend-plover "Suspend Plover." :translation "{PLOVER:SUSPEND}")
+(defplover plover-websocket-resume-plover "Resume Plover." :translation "{PLOVER:RESUME}")
+(defplover plover-websocket-add-translation "Add translation using the Plover interface." :translation "{PLOVER:ADD_TRANSLATION}")
+(defplover plover-websocket-lookup "Look up outline using the Plover interface." :translation "{PLOVER:LOOKUP}")
+(defplover plover-websocket-configure "Configure Plover." :translation "{PLOVER:CONFIGURE}")
+(defplover plover-websocket-focus "Focus Plover." :translation "{PLOVER:FOCUS}")
+(defplover plover-websocket-quit "Quit Plover." :translation "{PLOVER:QUIT}")
 
 (provide 'plover-websocket)
 ;;; plover-websocket.el ends here
