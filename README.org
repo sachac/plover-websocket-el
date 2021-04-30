@@ -20,7 +20,7 @@ plover -s plover_plugins install -e .
 
 Connect with =M-x plover-websocket-connect=
 
-This is the [[https://github.com/abo-abo/hydra][hydra]] I'm trying in my config:
+This is the [[https://github.com/abo-abo/hydra][hydra]] I'm trying in my config so that I can press =<f6> <f6>= twice to toggle Plover:
 
 #+begin_src emacs-lisp
 (defhydra my/plover (:exit t)
