@@ -48,6 +48,7 @@
 (defvar plover-websocket-on-message-payload-functions nil "Functions to call when messages arrive.")
 (defvar plover-websocket-messages nil "Messages from Plover.")
 (defvar plover-websocket-plover-command "plover" "Command to run Plover.")
+(defvar plover-websocket-zero-last-stroke-length t "Set to t if using 'keyboard' as the machine for Plover.")
 
 (defun plover-websocket-on-message (_ frame)
   "Handle Plover websocket sending FRAME."
@@ -85,11 +86,16 @@
   (interactive)
   (start-process-shell-command plover-websocket-plover-command))
 
-(defmacro defplover (command docstring translation)
+(defmacro defplover (command docstring translation &rest args)
   `(defun ,command ()
      ,docstring
      (interactive)
-     (plover-websocket-send :translation ,translation)))
+     (apply 'plover-websocket-send
+            :translation ,translation
+            :zero_last_stroke_length plover-websocket-zero-last-stroke-length
+            :forced t
+            ,args)))
+;; test
 
 (defplover plover-websocket-toggle-plover "Toggle Plover." "{PLOVER:TOGGLE}")
 (defplover plover-websocket-suspend-plover "Suspend Plover." "{PLOVER:SUSPEND}")
