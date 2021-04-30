@@ -1,0 +1,39 @@
+Experimental code for controlling Plover via websocket
+
+You will also need to install:
+- https://github.com/openstenoproject/plover
+- https://github.com/user202729/plover_websocket_server
+
+Follow the instructions at plover_websocket_server in order to
+install the plugin, and then enable it from Plover > Configure > Plugins.
+
+When I installed it, there was an error about
+ModuleNotFoundError: No module named 'plover_engine_server.websocket'
+
+I got around it by installing the plugin from source:
+
+#+begin_src sh :eval no
+git clone https://github.com/user202729/plover_websocket_server
+cd plover_websocket_server
+plover -s plover_plugins install -e .
+#+end_src
+
+Connect with =M-x plover-websocket-connect=
+
+This is the [[https://github.com/abo-abo/hydra][hydra]] I'm trying in my config:
+
+#+begin_src emacs-lisp
+(defhydra my/plover (:exit t)
+  ("<f6>" plover-websocket-toggle-plover :hint nil)
+  ("o" plover-websocket-connect "Open websocket")
+  ("p" plover-websocket-toggle-plover "Toggle Plover")
+  ("a" plover-websocket-add-translation "Add translation")
+  ("l" plover-websocket-lookup "Lookup")
+  ("c" plover-websocket-configure "Configure")
+  ("f" plover-websocket-focus "Focus")
+  ("q" plover-websocket-quit "Quit"))
+(global-set-key (kbd "<f6>") #'my/plover/body)
+#+end_src
+
+- My e-mail address: sacha@sachachua.com 
+- Site: https://sachachua.com
