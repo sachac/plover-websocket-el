@@ -93,7 +93,6 @@
      (apply 'plover-websocket-send
             :translation ,translation
             :zero_last_stroke_length plover-websocket-zero-last-stroke-length
-            :forced t
             ,args)))
 ;; test
 
