@@ -7,17 +7,6 @@ You will also need to install:
 Follow the instructions at plover_websocket_server in order to
 install the plugin, and then enable it from Plover > Configure > Plugins.
 
-When I installed it, there was an error about
-ModuleNotFoundError: No module named 'plover_engine_server.websocket'
-
-I got around it by installing the plugin from source:
-
-#+begin_src sh :eval no
-git clone https://github.com/user202729/plover_websocket_server
-cd plover_websocket_server
-plover -s plover_plugins install -e .
-#+end_src
-
 Connect with =M-x plover-websocket-connect=
 
 This is the [[https://github.com/abo-abo/hydra][hydra]] I'm trying in my config so that I can press =<f6> <f6>= twice to toggle Plover:

@@ -27,18 +27,9 @@
 ;; https://github.com/openstenoproject/plover
 ;; https://github.com/user202729/plover_websocket_server
 ;;
-;; Follow the instructions at plover_websocket_server in order to
-;; install the plugin, and then enable it from Plover > Configure > Plugins.
-;;
-;; When I installed it, there was an error about
-;; ModuleNotFoundError: No module named 'plover_engine_server.websocket'
-;;
-;; I got around it by installing the plugin from source:
-;; git clone https://github.com/user202729/plover_websocket_server
-;; cd plover_websocket_server
-;; plover -s plover_plugins install -e .
-;;
 ;; Connect with M-x plover-websocket-connect
+;; 
+;; See https://github.com/sachac/plover-websocket-el for notes and updates.
 ;; 
 ;;; Code:
 
