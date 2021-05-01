@@ -3,9 +3,12 @@ Experimental code for controlling Plover via websocket
 You will also need to install:
 - https://github.com/openstenoproject/plover
 - https://github.com/user202729/plover_websocket_server
-
-Follow the instructions at plover_websocket_server in order to
-install the plugin, and then enable it from Plover > Configure > Plugins.
+  - or my patched version at
+    https://github.com/sachac/plover_websocket_server, which doesn't
+    result in an extraneous backspace when Plover is enabled; you can
+    install it with =plover -s plover_plugins install -e
+    path/to/directory=)
+- Be sure to enable the Plover websocket server from =Plover > Configure > Plugins=.
 
 Connect with =M-x plover-websocket-connect=
 
@@ -20,6 +23,8 @@ This is the [[https://github.com/abo-abo/hydra][hydra]] I'm trying in my config 
   ("<f6>" plover-websocket-toggle-plover "Toggle Plover")
   ("<f7>" plover-websocket-quit "Quit"))
 (global-set-key (kbd "<f6>") #'my/plover/body)
+;; Might try this too
+(global-set-key (kbd "C-;") #'plover-websocket-toggle-plover)
 #+end_src
 
 - My e-mail address: sacha@sachachua.com 
