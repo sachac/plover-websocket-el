@@ -1,16 +1,12 @@
-Experimental code for controlling Plover via websocket
+Experimental code for controlling Plover via websocket. Ugh, I keep
+wanting to modify upstream stuff, so you might need to get these
+working too. I don't know if anything will work for anyone other than
+me. But hey, putting it here just in case!
 
-You will also need to install:
-- https://github.com/openstenoproject/plover
-- https://github.com/user202729/plover_websocket_server
-  - or my patched version at
-    https://github.com/sachac/plover_websocket_server, which doesn't
-    result in an extraneous backspace when Plover is enabled; you can
-    install it with =plover -s plover_plugins install -e
-    path/to/directory=)
-- Be sure to enable the Plover websocket server from =Plover > Configure > Plugins=.
+- plover-always-command branch of https://github.com/sachac/plover/tree/plover-always-command
+- sacha branch of https://github.com/sachac/plover_websocket_server, can be installed with =plover -s plover_plugins install -e path/to/directory=)
 
-Connect with =M-x plover-websocket-connect=
+Be sure to enable the Plover websocket server from =Plover > Configure > Plugins=.
 
 This is the [[https://github.com/abo-abo/hydra][hydra]] I'm trying in my config so that I can press =<f6> <f6>= twice to toggle Plover:
 #+begin_src emacs-lisp

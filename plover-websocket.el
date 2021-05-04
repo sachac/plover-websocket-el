@@ -121,13 +121,27 @@ KEY should be a steno string (ex: SKP-B)."
 (defun plover-websocket-look-up (translation)
   "Show the possible strokes that result in TRANSLATION."
   (interactive (list (read-string "Translation: ")))
-  (plover-websocket-send :look_up translation))
+  (plover-websocket-send :look_up translation)) 
+
+(defmacro with-plover (&rest body)
+  `(progn
+     (plover-websocket-send :translation "{PLOVER:ALWAYS:START}" :zero_last_stroke_length t)
+     ,@body
+     (plover-websocket-send :translation "{PLOVER:ALWAYS:END}")))
+
+(defmacro with-plover-plain (&rest body)
+  `(progn
+     (plover-websocket-send :translation "{PLOVER:ALWAYS:START}" :zero_last_stroke_length t)
+     (plover-websocket-send :translation "{PLOVER:SOLO_DICT:+commands.json}")
+     (prog1 (progn ,@body)
+       (plover-websocket-send :translation "{PLOVER:END_SOLO_DICT}")
+       (plover-websocket-send :translation "{PLOVER:ALWAYS:END}"))))
 
 (defun plover-websocket-get-translation (strokes)
   "Show the translation for STROKES.
 STROKES should be a string."
-  (interactive (list (read-string "Strokes: ")))
-  (plover-websocket-send :get_translation strokes))
+  (interactive (list (replace-regexp-in-string " " "/" (string-trim (with-plover-plain (read-string "Strokes: "))))))
+  (plover-websocket-send :get_translation strokes :forced t))
 
 ;; (plover-websocket-look-up "and" (lambda (result) (pp result)))
 
