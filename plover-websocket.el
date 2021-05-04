@@ -23,11 +23,7 @@
 
 ;;; Commentary:
 ;;
-;; You will also need to install:
-;; https://github.com/openstenoproject/plover
-;; https://github.com/user202729/plover_websocket_server
-;;
-;; Connect with M-x plover-websocket-connect
+ ;; Connect with M-x plover-websocket-connect
 ;; 
 ;; See https://github.com/sachac/plover-websocket-el for notes and updates.
 ;; 
@@ -36,14 +32,17 @@
 (defvar plover-websocket-url "ws://localhost:8086/websocket" "Plover websocket URL.")
 (defvar plover-websocket nil "Plover websocket connection.")
 (defvar plover-websocket-debug nil "Debug messages")
-(defvar plover-websocket-on-message-payload-functions nil "Functions to call when messages arrive.")
+(defvar plover-websocket-on-message-payload-functions '(plover-websocket-display-lookups) "Functions to call when messages arrive.")
 (defvar plover-websocket-messages nil "Messages from Plover.")
 (defvar plover-websocket-plover-command "plover" "Command to run Plover.")
 (defvar plover-websocket-zero-last-stroke-length t "Set to t if using 'keyboard' as the machine for Plover.")
+(defvar plover-websocket-message-callback-once-functions nil "List of callbacks that will be removed after they return non-nil.")
 
 (defun plover-websocket-on-message (_ frame)
   "Handle Plover websocket sending FRAME."
-  (let* ((payload (json-parse-string (websocket-frame-payload frame) :object-type 'plist :array-type 'list)))
+  (let* ((payload (let ((json-object-type 'plist)
+                        (json-array-type 'list))
+                    (json-read-from-string (websocket-frame-payload frame)))))
     (when plover-websocket-debug
       (setq plover-websocket-messages (cons frame plover-websocket-messages)))
     (run-hook-with-args 'plover-websocket-on-message-payload-functions payload)))
@@ -68,6 +67,7 @@
 
 (defun plover-websocket-send (&rest args)
   "Send a message of type REQUEST-TYPE."
+  (unless (websocket-openp plover-websocket) (plover-websocket-connect))
   (let ((msg (json-encode-plist args)))
     (websocket-send-text plover-websocket msg)
     (when plover-websocket-debug (prin1 msg))))
@@ -84,16 +84,52 @@
      (apply 'plover-websocket-send
             :zero_last_stroke_length plover-websocket-zero-last-stroke-length
             (quote ,args))))
-;; test
 
 (defplover plover-websocket-toggle-plover "Toggle Plover." :translation "{PLOVER:TOGGLE}")
 (defplover plover-websocket-suspend-plover "Suspend Plover." :translation "{PLOVER:SUSPEND}")
 (defplover plover-websocket-resume-plover "Resume Plover." :translation "{PLOVER:RESUME}")
-(defplover plover-websocket-add-translation "Add translation using the Plover interface." :translation "{PLOVER:ADD_TRANSLATION}")
-(defplover plover-websocket-lookup "Look up outline using the Plover interface." :translation "{PLOVER:LOOKUP}")
+(defplover plover-websocket-add-translation-with-interface "Add translation using the Plover interface." :translation "{PLOVER:ADD_TRANSLATION}")
+(defplover plover-websocket-lookup-with-interface "Look up outline using the Plover interface." :translation "{PLOVER:LOOKUP}")
 (defplover plover-websocket-configure "Configure Plover." :translation "{PLOVER:CONFIGURE}")
 (defplover plover-websocket-focus "Focus Plover." :translation "{PLOVER:FOCUS}")
 (defplover plover-websocket-quit "Quit Plover." :translation "{PLOVER:QUIT}")
+
+(defun plover-websocket-add-translation (key translation)
+  "Add KEY and TRANSLATION in Plover's default dictionary.
+KEY should be a steno string (ex: SKP-B)."
+  (interactive (read-string "Key (ex: SKP-B): ") (read-string "Translation: "))
+  (plover-websocket-send :add_translation '(:key key :translation translation)))
+
+(defun plover-websocket-display-lookups (payload)
+  (when-let ((result (plist-get payload :look_up_result)))
+    (message (mapconcat (lambda (group)
+                          (format "Suggestions for %s: %s"
+                                  (plist-get group :text)
+                                  (mapconcat (lambda (suggestion) (string-join suggestion "/"))
+                                             (plist-get group :steno_list)
+                                             "; ")))
+                        result
+                        ";;")))
+  (when-let ((result (plist-get payload :get_translation_result)))
+    (message "Plover: %s -> %s"
+             (string-join (plist-get result :key) "/")
+             (mapconcat (lambda (entry) (format "%s (%s)" (car entry) (file-name-nondirectory (cadr entry))))
+                        (plist-get result :result)           
+                        "; "))))
+
+;; TODO: Figure out how to add callbacks
+(defun plover-websocket-look-up (translation)
+  "Show the possible strokes that result in TRANSLATION."
+  (interactive (list (read-string "Translation: ")))
+  (plover-websocket-send :look_up translation))
+
+(defun plover-websocket-get-translation (strokes)
+  "Show the translation for STROKES.
+STROKES should be a string."
+  (interactive (list (read-string "Strokes: ")))
+  (plover-websocket-send :get_translation strokes))
+
+;; (plover-websocket-look-up "and" (lambda (result) (pp result)))
 
 (provide 'plover-websocket)
 ;;; plover-websocket.el ends here

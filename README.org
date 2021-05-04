@@ -27,5 +27,13 @@ This is the [[https://github.com/abo-abo/hydra][hydra]] I'm trying in my config 
 (global-set-key (kbd "C-;") #'plover-websocket-toggle-plover)
 #+end_src
 
+Other things that can work, although they still need a little fiddling:
+
+#+begin_src emacs-lisp
+(plover-websocket-send :add_translation '(:stroke "UT" :translation "Hello world"))
+(plover-websocket-send :look_up "SKP-")
+(plover-websocket-send :get_translation "because")
+#+end_src
 - My e-mail address: sacha@sachachua.com 
 - Site: https://sachachua.com
+
