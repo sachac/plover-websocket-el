@@ -23,7 +23,9 @@
 
 ;;; Commentary:
 ;;
- ;; Connect with M-x plover-websocket-connect
+;; Set your plover-websocket-password with M-x custom-variable or (setq ...)
+;; Connect with M-x plover-websocket-connect
+;; 
 ;; 
 ;; See https://github.com/sachac/plover-websocket-el for notes and updates.
 ;; 
@@ -31,13 +33,17 @@
 
 (defvar plover-websocket-url "ws://localhost:8086/websocket" "Plover websocket URL.")
 (defvar plover-websocket nil "Plover websocket connection.")
+(defgroup plover-websocket nil "Plover websocket")
+(defcustom plover-websocket-password nil "Password/secret key. See plover_websocket_server's README.md for configuration instructions."
+  :type '(choice (const :tag "None" nil)
+                 (string :tag "Password"))
+  :group 'plover-websocket)
 (defvar plover-websocket-debug nil "Debug messages")
 (defvar plover-websocket-on-message-payload-functions '(plover-websocket-display-lookups) "Functions to call when messages arrive.")
 (defvar plover-websocket-messages nil "Messages from Plover.")
 (defvar plover-websocket-plover-command "plover" "Command to run Plover.")
 (defvar plover-websocket-zero-last-stroke-length t "Set to t if using 'keyboard' as the machine for Plover.")
 (defvar plover-websocket-message-callback-once-functions nil "List of callbacks that will be removed after they return non-nil.")
-
 (defun plover-websocket-on-message (_ frame)
   "Handle Plover websocket sending FRAME."
   (let* ((payload (let ((json-object-type 'plist)
@@ -68,7 +74,7 @@
 (defun plover-websocket-send (&rest args)
   "Send a message of type REQUEST-TYPE."
   (unless (websocket-openp plover-websocket) (plover-websocket-connect))
-  (let ((msg (json-encode-plist args)))
+  (let ((msg (json-encode-plist (append args :secretkey plover-websocket-password))))
     (websocket-send-text plover-websocket msg)
     (when plover-websocket-debug (prin1 msg))))
 
@@ -98,7 +104,7 @@
   "Add KEY and TRANSLATION in Plover's default dictionary.
 KEY should be a steno string (ex: SKP-B)."
   (interactive (read-string "Key (ex: SKP-B): ") (read-string "Translation: "))
-  (plover-websocket-send :add_translation '(:key key :translation translation)))
+  (plover-websocket-send :add_translation `(:key ,key :translation ,translation)))
 
 (defun plover-websocket-display-lookups (payload)
   (when-let ((result (plist-get payload :look_up_result)))
@@ -117,17 +123,17 @@ KEY should be a steno string (ex: SKP-B)."
                         (plist-get result :result)           
                         "; "))))
 
-;; TODO: Figure out how to add callbacks
-(defun plover-websocket-look-up (translation)
-  "Show the possible strokes that result in TRANSLATION."
-  (interactive (list (read-string "Translation: ")))
-  (plover-websocket-send :look_up translation)) 
-
-(defmacro with-plover (&rest body)
+(defmacro with-plover-always (&rest body)
   `(progn
      (plover-websocket-send :translation "{PLOVER:ALWAYS:START}" :zero_last_stroke_length t)
-     ,@body
+     (prog1 (progn ,@body))
      (plover-websocket-send :translation "{PLOVER:ALWAYS:END}")))
+
+(defmacro with-plover-never (&rest body)
+  `(progn
+     (plover-websocket-send :translation "{PLOVER:NEVER:START}" :zero_last_stroke_length t)
+     (prog1 (progn ,@body)
+       (plover-websocket-send :translation "{PLOVER:NEVER:END}" :zero_last_stroke_length t))))
 
 (defmacro with-plover-plain (&rest body)
   `(progn
@@ -135,7 +141,13 @@ KEY should be a steno string (ex: SKP-B)."
      (plover-websocket-send :translation "{PLOVER:SOLO_DICT:+commands.json}")
      (prog1 (progn ,@body)
        (plover-websocket-send :translation "{PLOVER:END_SOLO_DICT}")
-       (plover-websocket-send :translation "{PLOVER:ALWAYS:END}"))))
+       (plover-websocket-send :translation "{PLOVER:ALWAYS:END} :zero_last_stroke_length t"))))
+
+;; TODO: Figure out how to add callbacks
+(defun plover-websocket-look-up (translation)
+  "Show the possible strokes that result in TRANSLATION."
+  (interactive (list (with-plover-never (read-string "Translation: "))))
+  (plover-websocket-send :look_up translation))
 
 (defun plover-websocket-get-translation (strokes)
   "Show the translation for STROKES.
