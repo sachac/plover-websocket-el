@@ -38,7 +38,9 @@
   :type '(choice (const :tag "None" nil)
                  (string :tag "Password"))
   :group 'plover-websocket)
-(defvar plover-websocket-debug nil "Debug messages")
+(defcustom plover-websocket-debug nil "If non-nil, capture some debugging info."
+  :type '(choice (const :tag "On" t)
+                 (const :tag "Off" nil)))
 (defvar plover-websocket-on-message-payload-functions '(plover-websocket-display-lookups) "Functions to call when messages arrive.")
 (defvar plover-websocket-messages nil "Messages from Plover.")
 (defvar plover-websocket-plover-command "plover" "Command to run Plover.")
@@ -74,7 +76,7 @@
 (defun plover-websocket-send (&rest args)
   "Send a message of type REQUEST-TYPE."
   (unless (websocket-openp plover-websocket) (plover-websocket-connect))
-  (let ((msg (json-encode-plist (append args :secretkey plover-websocket-password))))
+  (let ((msg (json-encode-plist (append args (list :secretkey plover-websocket-password)))))
     (websocket-send-text plover-websocket msg)
     (when plover-websocket-debug (prin1 msg))))
 
@@ -100,29 +102,6 @@
 (defplover plover-websocket-focus "Focus Plover." :translation "{PLOVER:FOCUS}")
 (defplover plover-websocket-quit "Quit Plover." :translation "{PLOVER:QUIT}")
 
-(defun plover-websocket-add-translation (key translation)
-  "Add KEY and TRANSLATION in Plover's default dictionary.
-KEY should be a steno string (ex: SKP-B)."
-  (interactive (read-string "Key (ex: SKP-B): ") (read-string "Translation: "))
-  (plover-websocket-send :add_translation `(:key ,key :translation ,translation)))
-
-(defun plover-websocket-display-lookups (payload)
-  (when-let ((result (plist-get payload :look_up_result)))
-    (message (mapconcat (lambda (group)
-                          (format "Suggestions for %s: %s"
-                                  (plist-get group :text)
-                                  (mapconcat (lambda (suggestion) (string-join suggestion "/"))
-                                             (plist-get group :steno_list)
-                                             "; ")))
-                        result
-                        ";;")))
-  (when-let ((result (plist-get payload :get_translation_result)))
-    (message "Plover: %s -> %s"
-             (string-join (plist-get result :key) "/")
-             (mapconcat (lambda (entry) (format "%s (%s)" (car entry) (file-name-nondirectory (cadr entry))))
-                        (plist-get result :result)           
-                        "; "))))
-
 (defmacro with-plover-always (&rest body)
   `(progn
      (plover-websocket-send :translation "{PLOVER:ALWAYS:START}" :zero_last_stroke_length t)
@@ -141,7 +120,30 @@ KEY should be a steno string (ex: SKP-B)."
      (plover-websocket-send :translation "{PLOVER:SOLO_DICT:+commands.json}")
      (prog1 (progn ,@body)
        (plover-websocket-send :translation "{PLOVER:END_SOLO_DICT}")
-       (plover-websocket-send :translation "{PLOVER:ALWAYS:END} :zero_last_stroke_length t"))))
+       (plover-websocket-send :translation "{PLOVER:ALWAYS:END}" :zero_last_stroke_length) t)))
+
+(defun plover-websocket-add-translation (key translation &optional dictionary)
+  "Add KEY and TRANSLATION in Plover's default dictionary.
+KEY should be a steno string (ex: SKP-B)."
+  (interactive (list (with-plover-plain (read-string "Key (ex: SKP-B): ")) (with-plover-never (read-string "Translation: "))))
+  (plover-websocket-send :add_translation `(:key ,key :translation ,translation :dictionary ,dictionary)))
+
+(defun plover-websocket-display-lookups (payload)
+  (when-let ((result (plist-get payload :look_up_result)))
+    (message (mapconcat (lambda (group)
+                          (format "Suggestions for %s: %s"
+                                  (plist-get group :text)
+                                  (mapconcat (lambda (suggestion) (string-join suggestion "/"))
+                                             (plist-get group :steno_list)
+                                             "; ")))
+                        result
+                        ";;")))
+  (when-let ((result (plist-get payload :get_translation_result)))
+    (message "Plover: %s -> %s"
+             (string-join (plist-get result :key) "/")
+             (mapconcat (lambda (entry) (format "%s (%s)" (car entry) (file-name-nondirectory (cadr entry))))
+                        (plist-get result :result)           
+                        "; "))))
 
 ;; TODO: Figure out how to add callbacks
 (defun plover-websocket-look-up (translation)
