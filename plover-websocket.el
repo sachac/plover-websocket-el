@@ -115,12 +115,11 @@
        (plover-websocket-send :translation "{PLOVER:NEVER:END}" :zero_last_stroke_length t))))
 
 (defmacro with-plover-plain (&rest body)
-  `(progn
-     (plover-websocket-send :translation "{PLOVER:ALWAYS:START}" :zero_last_stroke_length t)
-     (plover-websocket-send :translation "{PLOVER:SOLO_DICT:+commands.json}")
-     (prog1 (progn ,@body)
-       (plover-websocket-send :translation "{PLOVER:END_SOLO_DICT}")
-       (plover-websocket-send :translation "{PLOVER:ALWAYS:END}" :zero_last_stroke_length) t)))
+  `(unwind-protect
+       (progn
+         (plover-websocket-send :translation "{PLOVER:SOLO_DICT:+commands.json}")
+         ,@body)
+     (plover-websocket-send :translation "{PLOVER:END_SOLO_DICT}")))
 
 (defun plover-websocket-add-translation (key translation &optional dictionary)
   "Add KEY and TRANSLATION in Plover's default dictionary.
