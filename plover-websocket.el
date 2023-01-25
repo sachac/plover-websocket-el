@@ -41,11 +41,42 @@
 (defcustom plover-websocket-debug nil "If non-nil, capture some debugging info."
   :type '(choice (const :tag "On" t)
                  (const :tag "Off" nil)))
+(defcustom plover-websocket-stroke-buffer-name nil "If non-nil, add stroke information to the named buffer."
+  :type '(choice (const :tag "ff" t)
+                 (string :tag "Buffer name")))
+
 (defvar plover-websocket-on-message-payload-functions '(plover-websocket-display-lookups) "Functions to call when messages arrive.")
 (defvar plover-websocket-messages nil "Messages from Plover.")
 (defvar plover-websocket-plover-command "plover" "Command to run Plover.")
 (defvar plover-websocket-zero-last-stroke-length t "Set to t if using 'keyboard' as the machine for Plover.")
 (defvar plover-websocket-message-callback-once-functions nil "List of callbacks that will be removed after they return non-nil.")
+(defun plover-websocket-log-stroke (payload)
+	"Add stroke info from PAYLOAD to the end of `plover-websocket-stroke-buffer-name`."
+	(when (and plover-websocket-stroke-buffer-name (get-buffer-create plover-websocket-stroke-buffer-name))
+		(let (last-text
+					point)
+			(when (plist-get payload :stroked)
+				(with-current-buffer (get-buffer plover-websocket-stroke-buffer-name)
+					(setq point (point))
+					(goto-char (point-max))
+					(setq last-text
+								(mapconcat (lambda (o) (plist-get o :text))
+													 (plist-get (plist-get plover-websocket-last-translation-payload :translated) :new) ""))
+					(when (or (plist-get payload :rtfcre)
+										(plist-get
+										 (plist-get payload :stroked) :rtfcre))
+						(insert
+						 (or (plist-get payload :rtfcre)
+								 (plist-get
+									(plist-get payload :stroked) :rtfcre))
+						 " "))
+					(when (and last-text (string-match "^\n+$" last-text)) (insert last-text))
+					(when (get-buffer-window)
+						(with-selected-window (get-buffer-window)
+							(goto-char (point-max)))))))))
+
+(defvar plover-websocket-last-translation-payload nil "Last translation.")
+
 (defun plover-websocket-on-message (_ frame)
   "Handle Plover websocket sending FRAME."
   (let* ((payload (let ((json-object-type 'plist)
@@ -53,6 +84,10 @@
                     (json-read-from-string (websocket-frame-payload frame)))))
     (when plover-websocket-debug
       (setq plover-websocket-messages (cons frame plover-websocket-messages)))
+    (when (plist-get payload :translated)
+      (setq plover-websocket-last-translation-payload payload))
+    (when plover-websocket-stroke-buffer-name
+      (plover-websocket-log-stroke payload))
     (run-hook-with-args 'plover-websocket-on-message-payload-functions payload)))
 
 (defun plover-websocket-on-close (&rest args)
@@ -96,7 +131,7 @@
 (defplover plover-websocket-toggle-plover "Toggle Plover." :translation "{PLOVER:TOGGLE}")
 (defplover plover-websocket-suspend-plover "Suspend Plover." :translation "{PLOVER:SUSPEND}")
 (defplover plover-websocket-resume-plover "Resume Plover." :translation "{PLOVER:RESUME}")
-(defplover plover-websocket-add-translation-with-interface "Add translation using the Plover interface." :translation "{PLOVER:ADD_TRANSLATION}")
+(defplover plover-websocket-add-translation-with-interface "Add translation using the Plover interface. :translation {PLOVER:ADD_TRANSLATION}")
 (defplover plover-websocket-lookup-with-interface "Look up outline using the Plover interface." :translation "{PLOVER:LOOKUP}")
 (defplover plover-websocket-configure "Configure Plover." :translation "{PLOVER:CONFIGURE}")
 (defplover plover-websocket-focus "Focus Plover." :translation "{PLOVER:FOCUS}")
